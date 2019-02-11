@@ -167,7 +167,7 @@ start:
     # quicksort(first, last)
     # never returns
     # see note below about recursion
-    move $ra, $zero
+    li $ra, 2
     b qsort
 
 
@@ -182,9 +182,9 @@ start:
     # Since we are recursive that's a bit of an issue
     # so we use the $ra register as an index as to which
     # label to return to
-    # 0: endProg
-    # 1: retRecursive1: return from first of two recursive calls
-    # 2: retRecursive2: return from second of two recursive calls
+    # 0: retRecursive1: return from first of two recursive calls
+    # 1: retRecursive2: return from second of two recursive calls
+    # 2: endProg
 # stack
     # layout (12 bytes per frame)
         # RA (see above note)
@@ -253,7 +253,7 @@ endDoLoop:
 
     # this is the first recursive call so set up $ra
     # so that we return to retRecursive1
-    li $ra, 1
+    li $ra, 0
 
     # set up the arguments
                             #   $a0 = first (already is)
@@ -263,7 +263,7 @@ retRecursive1:
 
     # this is the second recursive call so set up $ra
     # so that we return to retRecursive2
-    li $ra, 2
+    li $ra, 1
 
     # set up the arguments
     lw $a0, 4($sp)
@@ -281,12 +281,9 @@ endQSort:                   # }
     addi $sp, $sp, 12
 
     # return (see notes on recursion and returns above)
-    beq $ra, $zero, endProg         # if ($ra == 0) exit()
+    beq $ra, $zero, retRecursive1   # if ($ra == 0) return to retRecursive1
     li $s0, 1
-    beq $ra, $s0, retRecursive1     # else if ($ra == 1) return to retRecursive1
-    b retRecursive2                 # else return to retRecursive2
-
-    # should never get here
-    li $v0, 1   # error flag
+    beq $ra, $s0, retRecursive2     # else if ($ra == 1) return to retRecursive2
+    b endProg                       # else exit()
 
 endProg:
