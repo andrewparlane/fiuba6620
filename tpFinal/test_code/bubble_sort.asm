@@ -149,31 +149,32 @@ li $t0, 6
 addi $t1, $t1, 4
 sw $t0, 0($t1)
 
-# t1 end of inner loop
-# t2 changed flag
-# t3 loopIdx (for loopIdx = 0; loopIdx < $t1; loopIdx++)
-# t4 read var 1
-# t5 read var 2
-startOuter:
-    li $t2, 0   # changed
-    li $t3, 0   # idx
-startInner:
-        lw $t4, 0($t3)
-        lw $t5, 4($t3)
-        ble $t4, $t5, noSwap    # if the first is <= the second then don't swap
-        # swap
-        sw $t4, 4($t3)
-        sw $t5, 0($t3)
-        addi $t2, $t2, 1 # set the changed flag
+# t1 dirección de el último valor
+# t2 cambiado? flag
+# t3 dirección de valor corriente
+# t4 valor1
+# t5 valor2
+startOuter:                         # do
+                                    # {
+    li $t2, 0                       #   bool cambiado = 0;
+    li $t3, 0                       #   uint8_t *ptr = 0; // primer valor es a dirección 0
 
+startInner:                         #   do
+                                    #   {
+        lw $t4, 0($t3)              #     valor1 = ptr[0];
+        lw $t5, 4($t3)              #     valor2 = ptr[1];
+        ble $t4, $t5, noSwap        #     if (valor1 > valor2)
+                                    #     {
+        sw $t4, 4($t3)              #       ptr[1] = valor1;
+        sw $t5, 0($t3)              #       ptr[0] = valor2;
+        addi $t2, $t2, 1            #       cambiado = 1;
+                                    #     }
 noSwap:
-        addi $t3, $t3, 4
+        addi $t3, $t3, 4            #     ptr++;
         beq $t3, $t1, endLoop
-        b startInner
+        b startInner                #   } while (ptr != úlimo)
 
 endLoop:
-        beq $t2, $zero, done
-        b startOuter
-
-done:
+        li $t6, 1
+        beq $t2, $t6, startOuter    # } while (cambiado)
 
