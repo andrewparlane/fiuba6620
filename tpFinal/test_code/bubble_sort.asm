@@ -167,7 +167,7 @@ startInner:                         #   do
                                     #     {
         sw $t4, 4($t3)              #       ptr[1] = valor1;
         sw $t5, 0($t3)              #       ptr[0] = valor2;
-        addi $t2, $t2, 1            #       cambiado = 1;
+        li $t2, 1                   #       cambiado = 1;
                                     #     }
 noSwap:
         addi $t3, $t3, 4            #     ptr++;
