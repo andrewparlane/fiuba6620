@@ -36,7 +36,7 @@
 		"ForkWrite":  {"type": "Fork", "x": 150, "y": 50, "size": 1, "in": "In", "out": ["Out1", "Out2"]},
 		"ForkBranch": {"type": "Fork", "x": 295, "y": 145, "size": 1, "in": "In", "out": ["Out1", "Out2"]},
 		"ForkNewPC":  {"type": "Fork", "x": 315, "y": 181, "size": 32, "in": "In", "out": ["Out1", "Out2"]},
-		"LocalHist":  {"type": "SatCountBank", "x": 250, "y": 500, "num_counters": 8, "width": 2, "initial_value": 1, "forwarding": true, "read_idx": "readIdx", "write_idx": "writeIdx", "update": "update", "count_up": "countUp", "read_data": "readData",},
+		"LocalHist":  {"type": "SatCountBank", "x": 250, "y": 500, "num_counters": 8, "width": 2, "initial_value": 1, "forwarding": true, "read_idx": "readIdx", "write_idx": "writeIdx", "update": "update", "count_up": "countUp", "read_data": "readData"},
 		"AndPredictT":{"type": "And", "x": 350, "y": 500, "in1": "In1", "in2": "In2", "out": "Out"},
 		"DistPredVal":{"type": "Distributor", "x": 335, "y": 535, "in": {"id": "In", "size": 2}, "out": [{"msb": 1, "lsb": 1}]},
 		"ForkTarget": {"type": "Fork", "x": 370, "y": 187, "size": 32, "in": "In", "out": ["Out1", "Out2"]},
