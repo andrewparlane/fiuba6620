@@ -36,7 +36,7 @@
 		"ForkNewPC":  {"type": "Fork", "x": 315, "y": 181, "size": 32, "in": "In", "out": ["Out1", "Out2"]},
 		"GlobalHist": {"type": "ShiftReg", "x": 270, "y": 440, "width": 3, "forwarding": true, "write": "write", "write_data": "writeData", "read_data": "readData"},
 		"ForkGHRD":   {"type": "Fork", "x": 320, "y": 450, "size": 3, "in": "In", "out": ["Out1", "Out2"]},
-		"satCounters":{"type": "SatCountBank", "x": 230, "y": 500, "num_counters": 8, "width": 2, "initial_value": 1, "forwarding": true, "read_idx": "readIdx", "write_idx": "writeIdx", "update": "update", "count_up": "countUp", "read_data": "readData",},
+		"satCounters":{"type": "SatCountBank", "x": 230, "y": 500, "num_counters": 8, "width": 2, "initial_value": 1, "forwarding": true, "read_idx": "readIdx", "write_idx": "writeIdx", "update": "update", "count_up": "countUp", "read_data": "readData"},
 		"DistPredVal":{"type": "Distributor", "x": 315, "y": 535, "in": {"id": "In", "size": 2}, "out": [{"msb": 1, "lsb": 1}]},
 		"AndPredictT":{"type": "And", "x": 350, "y": 415, "in1": "In1", "in2": "In2", "out": "Out"},
 		"ForkTarget": {"type": "Fork", "x": 370, "y": 187, "size": 32, "in": "In", "out": ["Out1", "Out2"]},
