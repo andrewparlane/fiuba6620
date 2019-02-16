@@ -3,17 +3,19 @@
 import matplotlib.pyplot as plt
 
 # Options
-point_size          = 20
-show_cpi            = 1
-show_hr             = 1
-show_local_hist     = 1
-show_global_hist    = 1
-show_two_level      = 1
-show_loop           = 1
-show_gcd            = 1
-show_bubble         = 1
-show_qsort          = 1
-show_avg            = 1
+point_size                  = 20
+show_cpi                    = 1
+show_hr                     = 1
+show_local_hist             = 0
+show_global_hist            = 0
+show_two_level              = 0
+show_predictors_superplot   = 1
+show_loop                   = 0
+show_gcd                    = 0
+show_bubble                 = 0
+show_qsort                  = 0
+show_avg                    = 0
+show_algo_superplot         = 1
 
 # Read the data
 
@@ -197,6 +199,57 @@ if show_two_level and show_cpi:
 
     plt.legend()
 
+# Predictors superplot
+if show_predictors_superplot:
+    #plt.figure()
+    f, axarr = plt.subplots(3, 2, sharex='col')
+    f.suptitle("HR y CPI contra Bits por los tres predictores")
+
+    axarr[0, 0].set_title("HR% contra Bits")
+    axarr[0, 0].scatter(local_hist_bits, local_hist_loop_hr, s=point_size, label='Loop');
+    axarr[0, 0].scatter(local_hist_bits, local_hist_gcd_hr, s=point_size, label='GCD');
+    axarr[0, 0].scatter(local_hist_bits, local_hist_bubble_hr, s=point_size, label='Bubble sort');
+    axarr[0, 0].scatter(local_hist_bits, local_hist_qsort_hr, s=point_size, label='Quick sort');
+
+    axarr[0, 1].set_title("CPI contra Bits")
+    axarr[0, 1].scatter(local_hist_bits, local_hist_loop_cpi, s=point_size, label='Loop');
+    axarr[0, 1].scatter(local_hist_bits, local_hist_gcd_cpi, s=point_size, label='GCD');
+    axarr[0, 1].scatter(local_hist_bits, local_hist_bubble_cpi, s=point_size, label='Bubble sort');
+    axarr[0, 1].scatter(local_hist_bits, local_hist_qsort_cpi, s=point_size, label='Quick sort');
+
+    #axarr[1, 0].set_title("HR% contra Bits")
+    axarr[1, 0].scatter(global_hist_bits, global_hist_loop_hr, s=point_size, label='Loop');
+    axarr[1, 0].scatter(global_hist_bits, global_hist_gcd_hr, s=point_size, label='GCD');
+    axarr[1, 0].scatter(global_hist_bits, global_hist_bubble_hr, s=point_size, label='Bubble sort');
+    axarr[1, 0].scatter(global_hist_bits, global_hist_qsort_hr, s=point_size, label='Quick sort');
+
+    #axarr[1, 1].set_title("CPI contra Bits")
+    axarr[1, 1].scatter(global_hist_bits, global_hist_loop_cpi, s=point_size, label='Loop');
+    axarr[1, 1].scatter(global_hist_bits, global_hist_gcd_cpi, s=point_size, label='GCD');
+    axarr[1, 1].scatter(global_hist_bits, global_hist_bubble_cpi, s=point_size, label='Bubble sort');
+    axarr[1, 1].scatter(global_hist_bits, global_hist_qsort_cpi, s=point_size, label='Quick sort');
+
+    #axarr[2, 0].set_title("HR% contra Bits")
+    axarr[2, 0].scatter(two_level_bits, two_level_loop_hr, s=point_size, label='Loop');
+    axarr[2, 0].scatter(two_level_bits, two_level_gcd_hr, s=point_size, label='GCD');
+    axarr[2, 0].scatter(two_level_bits, two_level_bubble_hr, s=point_size, label='Bubble sort');
+    axarr[2, 0].scatter(two_level_bits, two_level_qsort_hr, s=point_size, label='Quick sort');
+
+    #axarr[2, 1].set_title("CPI contra Bits")
+    axarr[2, 1].scatter(two_level_bits, two_level_loop_cpi, s=point_size, label='Loop');
+    axarr[2, 1].scatter(two_level_bits, two_level_gcd_cpi, s=point_size, label='GCD');
+    axarr[2, 1].scatter(two_level_bits, two_level_bubble_cpi, s=point_size, label='Bubble sort');
+    axarr[2, 1].scatter(two_level_bits, two_level_qsort_cpi, s=point_size, label='Quick sort');
+
+    axarr[0,0].set(xlabel="", ylabel="Historia Local")
+    axarr[0,1].set(xlabel="", ylabel="")
+    axarr[1,0].set(xlabel="", ylabel="Historia Global")
+    axarr[1,1].set(xlabel="", ylabel="CPI")
+    axarr[2,0].set(xlabel="Bits", ylabel="Dos Niveles")
+    axarr[2,1].set(xlabel="Bits", ylabel="")
+
+    f.legend(["Loop", "GCD", "Bubble", "QSort"]);
+
 # loop HR
 if show_loop and show_hr:
     plt.figure()
@@ -337,5 +390,52 @@ if show_avg and show_cpi:
 
     plt.legend()
 
-plt.show()
 
+# Algorithm superplot
+if show_algo_superplot:
+    #plt.figure()
+    f, axarr = plt.subplots(4, 2, sharex='col')
+    f.suptitle("HR y CPI contra Bits por los algoritmos de prueab")
+
+    axarr[0, 0].set_title("HR% contra Bits")
+    axarr[0, 0].scatter(local_hist_bits, local_hist_loop_hr, s=point_size, label='Local');
+    axarr[0, 0].scatter(global_hist_bits, global_hist_loop_hr, s=point_size, label='Global');
+    axarr[0, 0].scatter(two_level_bits, two_level_loop_hr, s=point_size, label='Dos Niveles');
+
+    axarr[0, 1].set_title("CPI contra Bits")
+    axarr[0, 1].scatter(local_hist_bits, local_hist_loop_cpi, s=point_size, label='Local');
+    axarr[0, 1].scatter(global_hist_bits, global_hist_loop_cpi, s=point_size, label='Global');
+    axarr[0, 1].scatter(two_level_bits, two_level_loop_cpi, s=point_size, label='Dos Niveles');
+
+    axarr[1, 0].scatter(local_hist_bits, local_hist_gcd_hr, s=point_size, label='Local');
+    axarr[1, 0].scatter(global_hist_bits, global_hist_gcd_hr, s=point_size, label='Global');
+    axarr[1, 0].scatter(two_level_bits, two_level_gcd_hr, s=point_size, label='Dos Niveles');
+
+    axarr[1, 1].scatter(local_hist_bits, local_hist_gcd_cpi, s=point_size, label='Local');
+    axarr[1, 1].scatter(global_hist_bits, global_hist_gcd_cpi, s=point_size, label='Global');
+    axarr[1, 1].scatter(two_level_bits, two_level_gcd_cpi, s=point_size, label='Dos Niveles');
+
+    axarr[2, 0].scatter(local_hist_bits, local_hist_bubble_hr, s=point_size, label='Local');
+    axarr[2, 0].scatter(global_hist_bits, global_hist_bubble_hr, s=point_size, label='Global');
+    axarr[2, 0].scatter(two_level_bits, two_level_bubble_hr, s=point_size, label='Dos Niveles');
+
+    axarr[2, 1].scatter(local_hist_bits, local_hist_bubble_cpi, s=point_size, label='Local');
+    axarr[2, 1].scatter(global_hist_bits, global_hist_bubble_cpi, s=point_size, label='Global');
+    axarr[2, 1].scatter(two_level_bits, two_level_bubble_cpi, s=point_size, label='Dos Niveles');
+
+    axarr[3, 0].scatter(local_hist_bits, local_hist_qsort_hr, s=point_size, label='Local');
+    axarr[3, 0].scatter(global_hist_bits, global_hist_qsort_hr, s=point_size, label='Global');
+    axarr[3, 0].scatter(two_level_bits, two_level_qsort_hr, s=point_size, label='Dos Niveles');
+
+    axarr[3, 1].scatter(local_hist_bits, local_hist_qsort_cpi, s=point_size, label='Local');
+    axarr[3, 1].scatter(global_hist_bits, global_hist_qsort_cpi, s=point_size, label='Global');
+    axarr[3, 1].scatter(two_level_bits, two_level_qsort_cpi, s=point_size, label='Dos Niveles');
+
+    axarr[0,0].set(xlabel="", ylabel="Loop")
+    axarr[1,0].set(xlabel="", ylabel="GCD")
+    axarr[2,0].set(xlabel="", ylabel="Bubble Sort")
+    axarr[3,0].set(xlabel="Bits", ylabel="Quick Sort")
+
+    f.legend(["Historia Local", "Historia Global", "Dos Niveles"]);
+
+plt.show()
