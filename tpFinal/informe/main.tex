@@ -58,11 +58,11 @@ Andrew Parlane \\
 
 \section{Objetivo}
 
-El objetivo de este trabajo es, usando el program DrMIPS, diseñar, implementar y caracterizar varios predictores de saltos. DrMIPS es un program de fuente abierto escrito en Java, que permite simular el camino de datos de un CPU MIPS. El camino de datos y el conjunto de instrucciones son implementado mediante archivos JSON.
+El objetivo de este trabajo es diseñar, implementar y caracterizar varios predictores de saltos, usando el programa DrMIPS. DrMIPS es un programa de fuente abierto escrito en JAVA, que permite simular el camino de datos de un CPU MIPS 32. El camino de datos y el conjunto de instrucciones son implementado mediante archivos JSON.
 
 \section{Introducción}
 
-En un CPU monociclo cada instrucción es ejecutado completamente antes de la siguiente comienza. En el caso de un salto condicional esto significa que, es conocido si el salto estará tomado o no, antes de cuando es necesario leer la siguiente instrucción. Mientras que en un CPU con un pipeline, dos o más instrucciones pueden estar ejecutando al mismo tiempo. Así puede ser necesario comenzar leer la siguiente instrucción antes de cuando es conocido si un salto estará tomado o no. Esto es un riesgo de control.
+En un CPU monociclo cada instrucción es ejecutado completamente antes de la siguiente comienza. En el caso de un salto condicional esto significa que, es conocido si el salto estará tomado o no, antes de cuando es necesario leer la siguiente instrucción. Mientras que en un CPU con un pipeline, dos o más instrucciones pueden estar ejecutando al mismo tiempo. Así puede ser necesario comenzar leer la siguiente instrucción antes de conocer si un salto previo estará tomado o no. Esto es un riesgo de control.
 
 En un CPU MIPS 32 básico el pipeline tiene cinco etapas:
 
@@ -70,13 +70,13 @@ En un CPU MIPS 32 básico el pipeline tiene cinco etapas:
 \item IF - Lea la instrucción desde la memoria de instrucciones.
 \item ID - Descodifica la instrucción y lea los registros.
 \item EX - Ejecuta operaciones ALU.
-\item MEM - Escritora / Lectura de la memoria de datos.
+\item MEM - Escribe / Lea la memoria de datos.
 \item WB - Escribe el resultado al registro.
 \end{itemize}
 
-Por un salto condicional el CPU solo sabe si debería tomar le o no después de la operación ALU. Normalmente resuelve esto en la etapa MEM, así hay tres ciclos donde el CPU no sabe cual instrucciones leer.
+Por un salto condicional el CPU solo sabe si debería tomarlo o no después de la operación ALU. Normalmente resuelve esto en la etapa MEM, así hay tres ciclos donde el CPU no sabe cual instrucciones leer.
 
-Una solución de esto es introducir un "stall" en el pipeline por cada ciclo hasta el resultado de un salto es conocido. Por ejemplo:
+Una solución de esto es introducir un ``stall'' en el pipeline por cada ciclo hasta el resultado del salto es conocido. Por ejemplo:
 
 \begin{figure}[!htb]
 \centering
@@ -85,16 +85,16 @@ Una solución de esto es introducir un "stall" en el pipeline por cada ciclo has
 \label{fig:always_stall}
 \end{figure}
 
-El problema con este método es que no es muy eficiente. Cada salto condicional toma cuatro ciclos para ejecutar. Un mejor método sería intentar predecir si el salto será tomado o no, y si se equivoca, vaciar las primeras tres etapas del pipeline. En este caso el truco es diseñar un predictor muy preciso sin usando demasiado recursos.
+El problema con este método es que no es muy eficiente. Cada salto condicional toma cuatro ciclos para ejecutar. Un método mejor sería intentar predecir si el salto será tomado o no, y si se equivoca, vaciar las primeras tres etapas del pipeline. En este caso el truco es diseñar un predictor muy preciso sin usando demasiados recursos.
 
-También hay otras métodos para mejor el desempeño como "branch delay slots" o resolviendo el salto en una etapa anterior, pero esos son afuera del tema de este proyecto.
+También hay otros métodos para mejorar el desempeño como ``Branch Delay Slots'' o resolviendo el salto en una etapa anterior, pero esos son afuera del tema de este proyecto.
 
-\section{Predictores de saltos}
-\subsection{Predictores estáticos}
+\section{Predictores de Saltos}
+\subsection{Predictores Estáticos}
 
-Un predictor de saltos estático elige el mismo acción por cada salto. Hay dos posibilidades: siempre no tomado, siempre tomado.
+Un predictor de saltos estático elige la misma acción por cada salto. Hay dos posibilidades: siempre no tomado y siempre tomado.
 
-En el caso de siempre no tomado el procesador sigue leyendo las siguientes instrucciones (PC + 4). En la etapa de MEM si el salto no está tomado, no tiene que hacer nada, la ejecución sigue como normal, pero si el salto está tomado, tiene que vaciar las primeras etapas del pipeline (IF, ID, EX) y ajustar el PC a la dirección nueva. Figura \ref{fig:assume_not_taken_wrong} muestra que pasa cuando un salto es tomado.
+En el caso de siempre no tomado el procesador sigue leyendo las siguientes instrucciones (PC + 4). En la etapa de MEM si el salto no está tomado, no tiene que hacer nada. Pero si el salto está tomado, tiene que vaciar las primeras tres etapas del pipeline (IF, ID, EX) y ajusta el PC a la dirección nueva. Figura \ref{fig:assume_not_taken_wrong} muestra que pasa cuando un salto es tomado.
 
 \begin{figure}[!htb]
 \centering
@@ -103,7 +103,7 @@ En el caso de siempre no tomado el procesador sigue leyendo las siguientes instr
 \label{fig:assume_not_taken_wrong}
 \end{figure}
 
-La otra opción es siempre suponer que el salto será tomado. El problema con este método es que no sabe que es un salto hasta la segunda etapa ID, así siempre tiene que vaciar la primera etapa IF. Si el salto actualmente es tomado, no hay nada más hacer, pero en el caso que no es tomado, tiene que vaciar las primeras tres etapas de nuevo. Figura \ref{fig:assume_taken} muestra los dos casos.
+La otra opción es siempre suponer que el salto será tomado. El problema con este método es que no sabe que es un salto hasta la segunda etapa (ID), así siempre tiene que vaciar la primera etapa (IF). Si el salto actualmente es tomado, no hay nada más hacer, pero en el caso que no es tomado, tiene que vaciar las primeras tres etapas de nuevo. Figura \ref{fig:assume_taken} muestra los dos casos.
 
 \begin{figure}[!htb]
 \centering
@@ -112,13 +112,13 @@ La otra opción es siempre suponer que el salto será tomado. El problema con es
 \label{fig:assume_taken}
 \end{figure}
 
-\subsection{Predictores dinámicos}
+\subsection{Predictores Dinámicos}
 
 Predictores de saltos dinámicos intentan predecir si el salto será tomado o no basado en la historia del salto (historia local) o de todos los saltos (historia global).
 
-\subsubsection{Predictor de historia local}
+\subsubsection{Predictor de Historia Local}
 
-Un predictor de saltos de historia local usa $2^N$ contadores que saturan, de M bits cada uno. En la etapa ID un contador es direccionado con N bits del PC. Si el valor corriente del contador tiene el bit más significativo encendido predice que el salto estará tomado. En la etapa MEM el contador es actualizado, si el salto actualmente está tomado, se incrementa por uno, y si no, se decrementa por uno. También en la etapa MEM si la predicción estuvo equivocado, vacía las primeras tres etapas del pipeline y ajusta el PC hasta el valor correcto. Figura \ref{fig:local_history} muestra un predictor de historia local.
+Un predictor de saltos de historia local usa $2^N$ contadores que saturan, de M bits cada uno. En la etapa ID un contador es direccionado con N bits del PC. Si el valor corriente del contador tiene el bit más significativo encendido predice que el salto estará tomado. En la etapa MEM el contador es actualizado, si el salto actualmente está tomado, se incrementa por uno, y si no, se decrementa por uno. También en la etapa MEM si la predicción estuvo equivocado, vacía las primeras tres etapas del pipeline y ajusta el PC al valor correcto. Figura \ref{fig:local_history} muestra un predictor de historia local.
 
 \begin{figure}[!htb]
 \centering
@@ -129,9 +129,9 @@ Un predictor de saltos de historia local usa $2^N$ contadores que saturan, de M 
 
 La idea de esto es que si un salto es tomado más frecuentemente que no, el valor del contador normalmente estará cerca el máximo y predice tomado, y viceversa.
 
-Porque hay $2^N$ contadores usamos N bits del PC para direccionar los contadores. En MIPS32 cada instrucción es cuatro bytes, así los dos bits más bajos del PC siempre son ceros. Normalmente usan los siguiente N bits menos significativos. Interferencia ocurre cuando dos saltos direcciona el mismo contador. Eligiendo N es un intercambio entre menos interferencia y la cantidad de memoria necesario para guardar los contadores.
+Porque hay $2^N$ contadores, usamos N bits del PC para direccionar los contadores. En MIPS32 cada instrucción es cuatro bytes, así los dos bits más bajos del PC siempre son ceros. Normalmente usan los siguiente N bits menos significativos. Interferencia ocurre cuando dos saltos direcciona el mismo contador. Eligiendo N es un intercambio entre menos interferencia y la cantidad de memoria necesario para guardar los contadores.
 
-Cada contador tiene M bits, si M es uno el contador solo puede ser 0 o 1, así cada vez predice el mismo de que hizo el salto la última vez. El problema con esto es que no hay histéresis. El siguiente código demuestra esto.
+Cada contador tiene M bits, si M=1 el contador solo puede ser 0 o 1, así cada vez la predicción es que este salto hizo la última vez. El problema con esto es que no hay histéresis. El siguiente código demuestra esto.
 
 \begin{minted}{C}
 
@@ -175,9 +175,9 @@ i & contador & predicción & Hit / Miss & contador & predicción & Hit / Miss \\
 \hline
 \end{tabular} \\
 
-Si ejecuta este lazo suficiente vecez que los primeras dos iteraciones están despreciable, la tasa del hit para M = 1 es 33\%, y para M = 2 es 66\%. Sin embargo, si M es demasiado grande dura mucho tiempo para llegar al estado de equilibrio.
+Si ejecuta este lazo suficiente vecez que los primeras dos iteraciones están despreciable, la tasa del hit para M = 1 es 33\%, y para M = 2 es 67\%. Sin embargo, si M es demasiado grande dura mucho tiempo para llegar al estado de equilibrio.
 
-\subsubsection{Predictor de historia global}
+\subsubsection{Predictor de Historia Global}
 
 Si dos saltos están correlacionados el resultado de uno puede ser adivinado desde el resultado del otro. Por ejemplo, en el código siguiente, si los dos primeros saltos no están tomados (a == 0 y b == 0) entonces el tercer salto no estará tomado tan poco, siempre que a ni b están modificados adentro de los bloques.
 
@@ -205,9 +205,9 @@ Para implementar un predictor de historia global, se usa un registro de desplaza
 \label{fig:global_history}
 \end{figure}
 
-\subsubsection{Predictor de dos niveles}
+\subsubsection{Predictor de Dos Niveles}
 
-Un predictor de dos niveles usa ambos de las técnicas anteriores. Un registro de desplazamiento de P bits direcciona $2^P$ bancos de $2^N$ contadores. El contador es direccionado en el banco elegido por N bits del PC. Cada contador tiene M bits. Figura \ref{fig:two_level_predictor} muestra un predictor de dos niveles.
+Un predictor de dos niveles usa ambas de las técnicas anteriores. Hay un registro de desplazamiento de P bits, y $2^P$ bancos de $2^N$ contadores con M bits cada uno. El banco es direccionado con el registro de desplazamiento y el contador es direccionado por N bits del PC. Figura \ref{fig:two_level_predictor} muestra un predictor de dos niveles.
 
 \begin{figure}[!htb]
 \centering
@@ -216,9 +216,9 @@ Un predictor de dos niveles usa ambos de las técnicas anteriores. Un registro d
 \label{fig:two_level_predictor}
 \end{figure}
 
-\subsection{CPI de los predictores}
+\subsection{CPI}
 
-CPI (Ciclos por instrucción) es una medida de desempeño. Comparando los CPIs por los varios predictores da un idea de que predictor será mejor. Sin embargo no es definitivo, si un predictor tiene un CPI más bajo que otro, pero la implementación significa que la frecuencia del reloj tiene que ser más lento, entonces puede ser menos eficiente.
+CPI (Ciclos por instrucción) es una medida de desempeño. Comparando los CPIs por las instruucciones de saltos por los varios predictores da una idea de cual predictor será mejor. Sin embargo no es definitivo, si un predictor tiene un CPI más bajo que otro, pero la implementación significa que la frecuencia del reloj tiene que ser más lento, entonces puede ser menos eficiente.
 
 \begin{tabular}{| l | r  r | r r | }
 \cline{2-5}
@@ -234,7 +234,7 @@ Dinámicos           &   2   &   4   &   4   &   1   \\
 \hline
 \end{tabular}
 
-El CPI Promedio ($\bar{CPI}$) depende del Hit Rate y del ratio de tomado a no tomado en el programa. Pero es claro que equivocando es muy caro, así el diseño del predictor es muy importante.
+El CPI Promedio ($\overline{CPI}$) depende del Hit Rate y del ratio de tomado a no tomado en el programa. Pero es claro que equivocando cuesta mucho, así el diseño del predictor es muy importante.
 
 \section{Implementación en DrMIPS}
 
@@ -248,27 +248,27 @@ Tuve que implementar unos componentes en JAVA para uso en mis caminos de datos:
     \item Demultiplexador de tamaño configurable.
 \end{itemize}
 
-No estoy muy familiar con JAVA pero pude implementar estos componentes sin dificultades, usando el componente del Register File como plantilla, para los primeros dos, y el multiplexador para el último.
+No estoy muy familiar con JAVA pero pude implementar estos componentes sin dificultades, usando el componente del Register File como plantilla para los primeros dos, y del multiplexador para el último.
 
-DrMIPS tiene bancos de pruebas para cada componente los que están ejecutados como parte del proceso de compilación. He escrito un banco de prueba para cada uno de mis componentes.
+DrMIPS tiene bancos de pruebas para cada componente los que están ejecutados como parte del proceso de compilación. He escrito un banco de prueba para cada uno de mis componentes para probar que funcionan como deseado.
 
 \subsection{Camino de Datos}
 
-Empecé con el camino de datas "Pipeline Extended" lo que viene con DrMIPS. Este camino de datos supone que saltos no estarán tomados. Usando eso como base implementé los siguientes diseños:
+Empecé con el camino de datas ``Pipeline Extended'' lo que viene con DrMIPS. Este camino de datos supone que saltos no estarán tomados. Usando eso como base implementé los siguientes diseños:
 
 \begin{itemize}
     \item Siempre Stall.
-    \item Supone tomado.
-    \item Historia local.
-    \item Historia global.
-    \item Dos niveles.
+    \item Supone Tomado.
+    \item Historia Local.
+    \item Historia Global.
+    \item Dos Niveles.
 \end{itemize}
 
-En los casos de los predictores dinámicos inicializo todos los contadores hasta $2^(M-1) - 1$, así están en el medio del rango en el lado de predecir no tomado.
+En los casos de los predictores dinámicos inicializo todos los contadores a $2^{M-1} - 1$, así están en el medio del rango en el lado de predecir no tomado.
 
 \subsubsection{Siempre Stall}
 
-En este camino de datos, cuando un Salto es detectado en la etapa de ID, EX, las etapas anteriores están vaciado. En la etapa MEM, si hay un salto y está tomado, vaciamos las etapas anteriores y actualizamos el PC. Figura \ref{fig:always_stall_drmips} muestra el diseño final.
+En este camino de datos, cuando un Salto es detectado en la etapa de ID, EX o MEM, las etapas anteriores están vaciado. En la etapa MEM actualizamos el PC. Figura \ref{fig:always_stall_drmips} muestra el diseño final.
 
 \begin{figure}[!htb]
 \centering
@@ -277,20 +277,20 @@ En este camino de datos, cuando un Salto es detectado en la etapa de ID, EX, las
 \label{fig:always_stall_drmips}
 \end{figure}
 
-\subsubsection{Supone tomado}
+\subsubsection{Supone Tomado}
 
-En este camino de datos, tuve que mover la calculación del target a la etapa ID desde la etapa EX. Añadí un extra mux para elegir como actualizar el PC (PC+2, target en ID, target correcto en MEM). Vacío IF cuando hay un salto en ID Y finalmente en vez de vaciando las etapas anteriores en MEM cuando el salto actualmente es tomado, hago cuando el salto no es tomado. Figura \ref{fig:predict_taken_drmips} muestra el diseño final.
+En este camino de datos, tuve que mover la calculación del target del salto a la etapa ID. Añadí un mux para elegir como actualizar el PC (PC+2 / target en ID / target correcto en MEM). Vacío IF cuando hay un salto en ID Y finalmente en vez de vaciando las etapas anteriores en MEM cuando el salto actualmente es tomado, hago cuando el salto no es tomado. Figura \ref{fig:predict_taken_drmips} muestra el diseño final.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{./img/predict_taken_drmips}
-\caption{El camino de datos con un predictor estático supone tomado.}
+\caption{El camino de datos con un predictor estático de suponer tomado.}
 \label{fig:predict_taken_drmips}
 \end{figure}
 
 \subsubsection{Historia Local}
 
-En este camino de datos uso mi banco de contadores para predecir el salto en la etapa ID, y actualizarle en la etapa MEM. Como siemper hay lógica para vaciar las etapas IF, ID y EX cuando es necesario, el único diferencia es que solo vacia IF desde ID si predice un salto. Figura \ref{fig:local_history_drmips} muestra el diseño final.
+En este camino de datos he usado mi banco de contadores para predecir el salto en la etapa ID, y actualizarle en la etapa MEM. Como siemper hay lógica para vaciar las etapas IF, ID y EX cuando es necesario, el único diferencia es que solo vacia IF desde ID si predice un salto. Figura \ref{fig:local_history_drmips} muestra el diseño final.
 
 \begin{figure}[!htb]
 \centering
@@ -301,7 +301,7 @@ En este camino de datos uso mi banco de contadores para predecir el salto en la 
 
 \subsubsection{Historia Global}
 
-En este camino de datos uso mi registro de desplazamiento para direccionar el banco de contadores. En la etapa MEM actualizo el registro de desplazamiento tanto como el contador usado para la predicción. Figura \ref{fig:global_history_drmips} muestra el diseño final.
+En este camino de datos he usado mi registro de desplazamiento para direccionar el banco de contadores. En la etapa MEM actualizo el registro de desplazamiento tanto como el contador. Figura \ref{fig:global_history_drmips} muestra el diseño final.
 
 \begin{figure}[!htb]
 \centering
@@ -314,7 +314,7 @@ En este camino de datos uso mi registro de desplazamiento para direccionar el ba
 
 Finalmente hay el predictor de dos niveles. Funciona parecido al predictor de historia local, pero en vez de tener un banco de contadores hay cuatro direccionado con la historia global. El única otra cosa interesante es el uso de mi demultiplexor para elegir cual banco actualizar en la etapa MEM. Figura \ref{fig:two_level_drmips} muestra el diseño final.
 
-En el camino de datos de historia local y historia global no es tan difícil cambiar el número de contadores sus anchos y el ancho del registro de desplazamiento. Pero en este camino de datos es mucho más difícil cambiar el número de banco de contadores. Si querrías aumentar el ancho del registro de desplazamiento un bit, tienes que manualmente añadir y conectar cuatro más bancos de contadores mediante la manipulación de archivos JSON, que es muy laborioso. Una optimización futuro será añadir un nuveo componente JAVA que tiene un conjunto de bancos de contadores, como lo que es mostrado en Figura \ref{fig:two_level_predictor}.
+En el camino de datos de historia local y historia global no es tan difícil cambiar el número de contadores, sus anchos y el ancho del registro de desplazamiento. Pero en este camino de datos es mucho más difícil cambiar el número de banco de contadores. Si querrías aumentar el ancho del registro de desplazamiento un bit, tienes que manualmente añadir y conectar cuatro más bancos de contadores mediante la manipulación de archivos JSON, que es muy laborioso. Una optimización futuro será añadir un nuveo componente JAVA que tiene un conjunto de bancos de contadores, como lo que es mostrado en Figura \ref{fig:two_level_predictor}.
 
 \begin{figure}[!htb]
 \centering
@@ -325,36 +325,34 @@ En el camino de datos de historia local y historia global no es tan difícil cam
 
 \subsection{Depurando}
 
-Durante la implementación del algoritmo quicksort para analizar el desempeño de los predictores, encontré un bug donde mi algoritmo no estuvo ordenando los valores correctamente. Mientras estuve depurando esto, encontré que el comportamiento estuvo diferente entre los caminos de datos "Pipeline Extended" y "Unicyle Extended". El bug estuvo en el diseño del camino de datos "Pipeline Extended" y no en mi algoritmo.
+Durante la implementación del algoritmo quicksort para analizar el desempeño de los predictores, encontré un bug donde mi algoritmo no estuvo ordenando los valores correctamente. Mientras estuve depurandolo, encontré que el comportamiento estuvo diferente entre los caminos de datos ``Pipeline Extended'' y ``Unicyle Extended''. El bug estuvo en el diseño del camino de datos ``Pipeline Extended'' que viene por defecto con DrMIPS y no en mi algoritmo.
 
-Para encontrar este problema tuve que ir paso por paso por miles de ciclos. A final implementé breakpoints en DrMIPS, así que pude ejecutar mi algoritmo hasta una dirección para acelerar depurando.
+Para encontrar este problema tuve que ir paso por paso por miles de ciclos que estuvo muuy lento. Para acelerar esto implementé breakpoints en DrMIPS, así que pude ejecutar mi algoritmo hasta una instrucción.
 
-El bug estuvo que cuando la Hazzord Detection Unit encuentra un hazzard desactiva escritos al PC. Si en el mismo cíclo la etapa MEM está actualizando el PC debido a un salto tomado, el escrito es ignorado y el flujo sigue por el salto equivocado. Arreglé este bug en dos de los pipelines y generé un push request al upsteam despositivo. Después tuve que arreglar el bug en mis pipelines también.
+El bug estuvo que cuando la Hazzord Detection Unit encuentra un hazzard desactiva escritos al PC. Si en el mismo cíclo la etapa MEM está actualizando el PC debido a un salto predicho equivocadamente, el escrito está ignorado y el flujo sigue por la rama equivocado. Arreglé este bug en dos de los pipelines que vienen con DrMIPS y en todos mis pipelines. Generé un pull request al repositorio upsteam que estuvo acceptado. También generé un pull request para la implementación de los breakpoints.
 
 \subsection{Scripts}
 
 Solo realicé una implementación de cada camino de datos, pero quise una forma analizarles con un rango del número de contadores $(2^N)$ y sus anchos M. Para hacer esto, escribí unos scripts en python para modificar los archivos JSON.
 
-También escribí otro script en python para graficar los "Hit Rates" de los predictores por todos los parámetros.
+También escribí otro script en python para dibujar gráficas de los ``Hit Rates'' de los predictores y los CPIs promedios por todos los parámetros.
 
-\section{Algoritmos de prueba}
+\section{Algoritmos de Prueba}
 
-Cuando llegó a la hora de escribir código para analizar el desempeño de cada camino de datos, encontré unas limitaciones de DrMIPS:
+Cuando llegé a la hora de escribir código para analizar el desempeño de cada camino de datos, encontré unas limitaciones en DrMIPS:
 
 \begin{itemize}
-    \item Por defecto solo ejecuta mil ciclos, después tienes que hace clic ejecuta de nuevo. Incrementé este limite a diez mil, que es mejor pero no es ideal.
-    \item Si ejecutas más de 80.000 ciclos DrMIPS falla por falta de memoria.
-    \item Las instrucciones implementado por defectos están limitados. La falta de JR es espacialmente molesto porque no puedes devolver desde una función, ni usa algoritmos recursivos. Podría haber implementado la instrucción JR pero habría sido necesario implementarle por cada camino de datos, y aun haciéndolo una vez es bastante laborioso.
-    \item La memoria de datos es de solo 400 bytes.
+    \item Por defecto solo ejecuta mil ciclos. Incrementé este limite a ochenta mil, que es mejor pero no es ideal.
+    \item Si ejecuta más de ochenta mil ciclos DrMIPS falla por falta de memoria.
+    \item Las instrucciones implementado por defectos están limitados. La falta de JR es espacialmente molesto porque no puedes volver desde una función. Podría haber implementado la instrucción JR pero habría sido necesario implementarle por cada camino de datos, y aun haciéndolo una vez es bastante laborioso.
+    \item La memoria de datos es de solo cuatro cientos bytes.
 \end{itemize}
 
-Por estos razones estuve limitado en los algoritmos que pude implementar.
-
-Nota que decidí no seguir un ABI en mi código, uso cualquier registros y no tengo un stack (excepto de en la prueba de quicksort).
+Por estos razones estuve limitado en los algoritmos que pude implementar. Decidí no seguir un ABI en mi código, uso cualquier registros y no tengo un stack (excepto de en la prueba de quicksort donde he implementado uno personalizado).
 
 \subsection{Lazo}
 
-\begin{minted}{ASM}
+\begin{minted}{nasm}
 li $t0, 0
 li $t1, 99
 start:
@@ -364,42 +362,42 @@ start:
 
 Este algoritmo muestra como los predictores diferentes funcionan con un salto que casi siempre es tomado.
 
-\subsection{Mayor Denominador Común}
+\subsection{Mayor Denominador Común (GCD)}
 
-En esta prueba calculo el mayor denominador común por todos (GCD) los pares de números en el rango de 50-59 y 90-99.
+En esta prueba calculo el GCD para todos los pares de números en los rango de 50-59 y 90-99.
 
-\begin{minted}{ASM}
-    li $s2, 99                      # maxA = 99;
-    li $s3, 59                      # maxB = 59;
-    li $s4, 0                       # idx = 0;
+\begin{minted}{nasm}
+    li $s2, 99                      ; maxA = 99
+    li $s3, 59                      ; maxB = 59;
+    li $s4, 0                       ; idx = 0;
 
-    li $s0, 90                      # a = 90;
-a_loop_start:                       # do {
-    li $s1, 50                      #   b = 50;
-b_loop_start:                       #   do {
-    move $t0, $s0                   #
+    li $s0, 90                      ; a = 90;
+a_loop_start:                       ; do {
+    li $s1, 50                      ;   b = 50;
+b_loop_start:                       ;   do {
+    move $t0, $s0
     move $t1, $s1
-    b gcd_loop_start                #     res = gcd(a,b);
+    b gcd_loop_start                ;     res = gcd(a,b);
 gcd_return:
-    sw $t2, 0($s4)                  #     results[idx] = res;
-    addi $s4, $s4, 4                #     idx++;
-    addi $s1, $s1, 1                #     b++
-    ble $s1, $s3, b_loop_start      #   } while (b <= maxB)
-    addi $s0, $s0, 1                #   a++
-    ble $s0, $s2, a_loop_start      # } while (a <= maxA)
-    b endProg                       # return;
+    sw $t2, 0($s4)                  ;     results[idx] = res;
+    addi $s4, $s4, 4                ;     idx++;
+    addi $s1, $s1, 1                ;     b++
+    ble $s1, $s3, b_loop_start      ;   } while (b <= maxB)
+    addi $s0, $s0, 1                ;   a++
+    ble $s0, $s2, a_loop_start      ; } while (a <= maxA)
+    b endProg                       ; return;
 
-gcd_loop_start:                     # while (1) {
-    beq $t0, $zero, ret_b           #   if (a == 0) return b;
-    beq $t1, $zero, ret_a           #   if (b == 0) return a;
-    beq $t0, $t1, ret_a             #   if (a == b) return a;
-    bge $t0, $t1, a_greater_than_b  #   if (a < b) {
-    sub $t1, $t1, $t0               #     b -= a;
-    b gcd_loop_start                #   }
-a_greater_than_b:                   #   else {
-    sub $t0, $t0, $t1               #     a -= b;
-    b gcd_loop_start                #   }
-                                    # }
+gcd_loop_start:                     ; while (1) {
+    beq $t0, $zero, ret_b           ;   if (a == 0) return b;
+    beq $t1, $zero, ret_a           ;   if (b == 0) return a;
+    beq $t0, $t1, ret_a             ;   if (a == b) return a;
+    bge $t0, $t1, a_greater_than_b  ;   if (a < b) {
+    sub $t1, $t1, $t0               ;     b -= a;
+    b gcd_loop_start                ;   }
+a_greater_than_b:                   ;   else {
+    sub $t0, $t0, $t1               ;     a -= b;
+    b gcd_loop_start                ;   }
+                                    ; }
 
 ret_a:
     move $t2, $t0
@@ -413,10 +411,10 @@ endProg:
 
 \subsection{Bubble Sort}
 
-\begin{minted}{ASM}
+\begin{minted}{nasm}
 
-# Cargar data generado por un generador de números random.
-# Uso 50 valores entre 0 y 100.
+; Cargar data generado por un generador de números random.
+; Uso 50 valores entre 0 y 100.
 li $t0, 94
 li $t1, 0
 sw $t0, 0($t1)
@@ -428,34 +426,34 @@ addi $t1, $t1, 4
 sw $t0, 0($t1)
 ...
 
-# t1 dirección de el último valor
-# t2 cambiado? flag
-# t3 dirección de valor corriente
-# t4 valor1
-# t5 valor2
-startOuter:                         # do
-                                    # {
-    li $t2, 0                       #   bool cambiado = 0;
-    li $t3, 0                       #   uint8_t *ptr = 0; // primer valor es a dirección 0
+; t1 dirección de el último valor
+; t2 cambiado? flag
+; t3 dirección de valor corriente
+; t4 valor1
+; t5 valor2
+startOuter:                         ; do
+                                    ; {
+    li $t2, 0                       ;   bool cambiado = 0;
+    li $t3, 0                       ;   uint8_t *ptr = 0; // primer valor es a dirección 0
 
-startInner:                         #   do
-                                    #   {
-        lw $t4, 0($t3)              #     valor1 = ptr[0];
-        lw $t5, 4($t3)              #     valor2 = ptr[1];
-        ble $t4, $t5, noSwap        #     if (valor1 > valor2)
-                                    #     {
-        sw $t4, 4($t3)              #       ptr[1] = valor1;
-        sw $t5, 0($t3)              #       ptr[0] = valor2;
-        li $t2, 1                   #       cambiado = 1;
-                                    #     }
+startInner:                         ;   do
+                                    ;   {
+        lw $t4, 0($t3)              ;     valor1 = ptr[0];
+        lw $t5, 4($t3)              ;     valor2 = ptr[1];
+        ble $t4, $t5, noSwap        ;     if (valor1 > valor2)
+                                    ;     {
+        sw $t4, 4($t3)              ;       ptr[1] = valor1;
+        sw $t5, 0($t3)              ;       ptr[0] = valor2;
+        li $t2, 1                   ;       cambiado = 1;
+                                    ;     }
 noSwap:
-        addi $t3, $t3, 4            #     ptr++;
+        addi $t3, $t3, 4            ;     ptr++;
         beq $t3, $t1, endLoop
-        b startInner                #   } while (ptr != úlimo)
+        b startInner                ;   } while (ptr != úlimo)
 
 endLoop:
         li $t6, 1
-        beq $t2, $t6, startOuter    # } while (cambiado)
+        beq $t2, $t6, startOuter    ; } while (cambiado)
 \end{minted}
 
 \subsection{Quick Sort}
@@ -480,47 +478,47 @@ Es una función recursivo, así es necesario tener un stack. El stack frame nece
 \begin{itemize}
     \item La dirección a volver (\$RA).
     \item El pivot (j).
-    \item La dirección de la última valor (last).
+    \item La dirección del último valor (last).
 \end{itemize}
 
-Implementé un stack que crece hacia abajo desde el fin de memoria. Porque solo hay 400 bytes de memoria de datos y usa las primeras 200 bytes por la lista de valores, solo hay 200 bytes disponibles por el stack. Mi implementación en C me muestra que la profundidad máxima es 13 llamadas por la misma lista de datos. 13 stack frames de 12 bytes cada uno significa que necesita 156 bytes por el stack, y tiene 200 bytes, así funciona.
+Implementé un stack que crece hacia abajo desde el fin de memoria. Porque solo hay 400 bytes de memoria de datos y usa los primeros 200 bytes por la lista de valores a ordenar, solo hay 200 bytes disponibles por el stack. Mi implementación en C me muestra que la profundidad máxima es 13 llamadas por la misma lista de datos. 13 stack frames de 12 bytes cada uno significa que necesita 156 bytes por el stack, y tiene 200 bytes, así funciona.
 
 Por la falta de la instruucción JR no puedo solo guardar la dirección a volver como normal. Tuve que usar un valor para indicar cual etiqueta usar. Aquí es el código relevante.
 
-\begin{minted}{ASM}
+\begin{minted}{nasm}
 qsort:
     ...
 
-    # guarda los valores en el stack
+    ; guarda los valores en el stack
     subi $sp, $sp, 12
     sw $ra, 8($sp)
     sw $t2, 4($sp)
     sw $a1, 0($sp)
 
-    # queremos volver a retRecursive1
+    ; queremos volver a retRecursive1
     li $ra, 1
     ...
-    b qsort                 #   qsort(first, j-1);
+    b qsort                 ;   qsort(first, j-1);
 retRecursive1:
 
-    # queremos volver a retRecursive2
+    ; queremos volver a retRecursive2
     li $ra, 2
     ...
-    b qsort                 #   qsort(j+1,last);
+    b qsort                 ;   qsort(j+1,last);
 retRecursive2:
 
-    # recuperar $ra del stack
+    ; recuperar RA del stack
     lw $ra, 8($sp)
 
-    # volver al último stack frame.
+    ; volver al último stack frame.
     addi $sp, $sp, 12
 
-    # return
-    beq $ra, $zero, retRecursive1   # if ($ra == 0) return to retRecursive1
+    ; return
+    beq $ra, $zero, retRecursive1   ; if (RA == 0) return to retRecursive1
     li $s0, 1
-    beq $ra, $s0, retRecursive2     # else if ($ra == 1) return to retRecursive2
+    beq $ra, $s0, retRecursive2     ; else if (RA == 1) return to retRecursive2
 
-endProg:                            # else exit()
+endProg:                            ; else exit()
 \end{minted}
 
 \section{Resultados}
@@ -544,13 +542,11 @@ Es claro que la efectividad del predictor tiene un impacto grande en el desempe�
 
 \subsection{Predictores Dinámicos}
 
-Ejecuté cada prueba con cada predictor por N entre 1 y 6, y M entre 1 y 6.
+Ejecuté cada prueba con cada predictor por N entre 1 y 6, y M entre 1 y 6. Todo el dato crudo puede estar encontrado en mi github en el archivo data/analysis.ods, aquí solo pongo los pedazos interesantes.
 
-Todo el data crudo puede estar encontrado en mi github en el archivo data/analysis.ods, aquí solo pongo los pedazos interesantes.
+El diseñador de un CPU quiere que su predictor de saltos tiene el mejor desempeño posible por un mínimo de recursos. Los recursos principales son área y potencia, aquí solo trato de área porque potencia es difícil medir y depende mucho del tecnología de fabricación, mientras área es directamente vinculado con el número de bits usados que es una métrica mucho más fácil medir.
 
-El diseñador de un CPU quiere que su predictor de saltos tiene el mejor desempeño posible por un mínimo de recursos. Los recursos principales son área y potencia, aquí solo trato de área porque potencia es difícil medir y depende mucho del tecnología de fabricación, mientras área es directamente vinculado con el número de bits usados que es una métrica mucho más fácil usar.
-
-Calculé cuantos bits cada predictor usa por cada par N y M:
+Calculé cuantos bits cada predictor usa por cada par de N y M:
 
 \begin{itemize}
     \item Historia Local - Hay $2^N$ contadores, cada uno tiene M bits. Así hay $ M * 2^N $ bits total.
@@ -558,9 +554,9 @@ Calculé cuantos bits cada predictor usa por cada par N y M:
     \item Dos Niveles - Hay 4 bancos de $2^N$ contadores, cada uno tiene M bits, y hay un registro de desplazamiento de 2 bits. Así hay $ 4M * 2^N + 2 $ bits total.
 \end{itemize}
 
-Después usé python para dibujar unos gráficos mostrando el CPI y HR contra el número de bits usado. Nota que por el predictor de historia local, los pares de parámetros: (n=2, m=4), (n=3, m=2), (n=4, m=1) todos usan 16 bits. Así en los gráficos podríamos tener un número de bits con más de un punto de dato.
+Después usé python para dibujar unas gráficas mostrando el CPI y HR contra el número de bits usado. Nota que es posible tener más de un punto de data para el mismo número de bits. Por ejemplo en el predictor de historia local, los pares de parámetros: (N=2, M=4), (N=3, M=2), (N=4, M=1) todos usan 16 bits.
 
-Que encontré es hasta un limite hay un fuerte relación entre número de bits y el HR y el CPI, después de ese limite, el HR y el CPI no cambian mucho y a veces empeoran. Figura \ref{fig:predictor_superplot} muestra estos resultados. Por los predictores de historia local y historia global ese limite es acerca 75 bits, pero en el caso del predictor de dos niveles el limite es acerca 200 bits. Esto indique que por mis pruebas el predictor de historia global necesita más bits para estar efectivo.
+Que encontré es hasta un limite hay un fuerte relación entre número de bits y el HR y el CPI, después de ese limite, el HR y el CPI no cambian mucho y a veces empeoran. Figura \ref{fig:predictor_superplot} muestra estos resultados. Por los predictores de historia local y historia global ese limite es acerca 50 bits, pero en el caso del predictor de dos niveles el limite es acerca 150 bits. Esto indique que por mis pruebas el predictor de dos niveles necesita más bits para estar efectivo.
 
 \begin{figure}[!htb]
 \centering
@@ -569,7 +565,7 @@ Que encontré es hasta un limite hay un fuerte relación entre número de bits y
 \label{fig:predictor_superplot}
 \end{figure}
 
-Figura \ref{fig:algos_superplot} muestra como se comparan los predictores por cada algoritmo. El predictor de historia global es el peor en todos los casos excepto de por el GCD donde es equivalente del historia local y dos niveles. Los predictores de historia local y de dos niveles estan muuy parecidos pero el de historia local está mejor por menos bits.
+Figura \ref{fig:algos_superplot} muestra como se comparan los predictores por cada algoritmo. El predictor de historia global es el peor en todos los casos excepto de por el GCD donde es comparable a los otros. Los predictores de historia local y de dos niveles están muy parecidos pero lo de historia local está mejor por menos bits.
 
 \begin{figure}[!htb]
 \centering
@@ -578,7 +574,7 @@ Figura \ref{fig:algos_superplot} muestra como se comparan los predictores por ca
 \label{fig:algos_superplot}
 \end{figure}
 
-En Figura \ref{fig:algos_superplot} hay un punto de historia local cerca 50 bits que tiene un muy bueno CPI por todos los algoritmos. Volviendo a mi data cruda lo encontré viene de (N=4, M=3). La siguiente tabla muuestra como se compara con el mejor de cada predictor.
+En Figura \ref{fig:algos_superplot} hay un punto de historia local cerca 50 bits que tiene un muy bueno CPI por todos los algoritmos. Volviendo a mi data cruda lo encontré como (N=4, M=3). La siguiente tabla muestra como se compara con el mejor de cada predictor. Tiene el mejor CPI en cada caso excepto del GCD y en ese caso es muy cerca.
 
 \begin{tabular}{|l|rr|rr|rr|rr|}
 \cline{2-9}
@@ -591,25 +587,23 @@ Historia Local (N=4, M=3) & 98.00	& 1.35 & 91.54 & 1.39 & 93.47 & 1.41 & 83.35 &
 \hline
 \end{tabular}
 
-Tiene el mejor CPI en cada caso excepto del GCD y en ese caso es muy cerca.
-
 \section{Conclusión}
 
-Durante este proyecto aprendí los siguientes:
+Durante este proyecto aprendí:
 
 \begin{itemize}
     \item Cómo funciona DrMIPS.
-    \item Cómo leer y escribir archivos de JSON mediante JAVA y python y de mano.
+    \item Cómo leer y escribir archivos de JSON mediante JAVA, python y de mano.
     \item Cómo funcionan varios predictores de saltos.
     \item La importancia de benchmarks.
     \item Cómo usar python para analizar data y dibujar gráficas.
 \end{itemize}
 
-Si supongamos que mis algoritmos de pruebas están representativos del código que este CPU va a ejecutar en el mundo real, entonces el predictor de saltos más óptimo es lo de la historia local con $2^4 = 16$ contadores de 3 bits cada uno. Creo que esta suposición es valido debidos a las restricciones en las instrucciones disponibles y en el tamaño de memoria de datos.
+Si supongamos que mis algoritmos de pruebas están representativos del código que este CPU va a ejecutar en el mundo real, entonces el predictor de saltos más óptimo es lo de la historia local con $2^4 = 16$ contadores de 3 bits cada uno. Creo que esta suposición es valido debidos a las restricciones en las instrucciones disponibles y en el tamaño de la memoria de datos.
 
-Los benchmarks son el parte más importante al diseño de un predictor de saltos tanto cómo al CPU entero. Si no están representativos de caso de uso real, el diseño no va a estar óptimo. Habría sido mejor tener más benchmarks incluyendo unos que están más complicados y ejecutan para más tiempo. Creo habría comenzado encontrar que el predictor de saltos de dos niveles estuvo mejor que lo del historia local.
+Los benchmarks son el parte más importante del diseño de un predictor de saltos tanto cómo del CPU entero. Si no están representativos de caso de uso real, el diseño no va a estar óptimo. Habría sido mejor tener más benchmarks incluyendo unos que están más complicados y ejecutan para más ciclos. Creo que habría comenzado encontrar que el predictor de saltos de dos niveles estuvo mejor que lo de la historia local.
 
-Sugiero que un proyecto por el futuro será mejorar DrMIPS para quitar estos limites en el tamaño de memoria de datos y el número de ciclos máximos, implementar más instrucciones, especialmente JR y implementar benchmarks más complicados.
+Sugiero que un proyecto futuro será mejorar DrMIPS para quitar estos limites en el tamaño de memoria de datos y el número de ciclos máximos, implementar más instrucciones, especialmente JR y implementar benchmarks más complicados.
 
 \section{Código}
 
